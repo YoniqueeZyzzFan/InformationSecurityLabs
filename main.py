@@ -1,4 +1,4 @@
-from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives import padding as padding2
 from cryptography.hazmat.primitives.asymmetric import padding
 import os
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -6,6 +6,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import argparse
+import yaml
 from tqdm import tqdm
 
 
@@ -51,21 +52,6 @@ def key_generator(encrypted_symmetrical_key_path: str, public_key_path: str, pri
     # сериализация шифрованного симметричного ключа в файл
     with open(encrypted_symmetrical_key_path + '\\encrypted_symmetrical.txt', 'wb') as file:
         file.write(encrypt_symmetrical_key)
-        """
-    # Расшифровка ключа симм алгоритма
-    with open(encrypted_symmetrical_key_path + '\\encrypted_symmetrical.pem', 'rb') as file:
-        ciphertext = file.read()
-    decrypt_symmetrical_key = private_key.decrypt(
-        ciphertext,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    if decrypt_symmetrical_key == symmetrical_key.key:
-        print('Its working, wooohoooo!!!!!! ')
-        """
 
 
 def encrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmetrical_key_path: str,
@@ -85,11 +71,43 @@ def encrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmet
     )
     with open(path_to_text, 'r') as file:
         text_to_encrypt = file.read()
-    cipher = Cipher(algorithms.Blowfish(symmetrical_key), modes.CBC(os.urandom(8)))
+    padder = padding2.ANSIX923(8).padder()
+    text = bytes(text_to_encrypt, 'UTF-8')
+    padded_text = padder.update(text) + padder.finalize()
+    temp = os.urandom(8)
+    cipher = Cipher(algorithms.Blowfish(symmetrical_key), modes.CBC(temp))
     encryptor = cipher.encryptor()
-    c_text = encryptor.update(bytes(text_to_encrypt, 'UTF-8')) + encryptor.finalize()
-    with open(path_to_save, 'wb') as file:
-        file.write(c_text)
+    c_text = encryptor.update(padded_text)
+    diction = {'encrypted': c_text, 'urandom': temp}
+    with open(path_to_save, 'w') as file:
+        yaml.dump(diction, file)
+
+
+def decrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmetrical_key_path: str, path_to_save: str):
+    # Расшифровка ключа симм алгоритма
+    with open(encrypted_symmetrical_key_path, 'rb') as file:
+        encrypted_symmetrical_key = file.read()
+    with open(private_key_path, 'rb') as file:
+        private_key = serialization.load_pem_private_key(file.read(), password=None)
+    symmetrical_key = private_key.decrypt(
+        encrypted_symmetrical_key,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+    with open(path_to_text, 'rb') as file:
+        data = yaml.safe_load(file)
+    text_to_decrypt = data["encrypted"]
+    urandom = data["urandom"]
+    cipher = Cipher(algorithms.Blowfish(symmetrical_key), modes.CBC(urandom))
+    decrypt = cipher.decryptor()
+    decrypt_text = decrypt.update(text_to_decrypt) + decrypt.finalize()
+    unpadder = padding2.ANSIX923(8).unpadder()
+    unpadded_decrypt_text = unpadder.update(decrypt_text)
+    with open(path_to_save, 'w') as file:
+        file.write(str(unpadded_decrypt_text))
 
 
 if __name__ == '__main__':
@@ -109,8 +127,14 @@ if __name__ == '__main__':
         type=str,
         help="Это обязательный позиционный аргумент, который указывает куда будет сохранен зашифрованный текст",
         dest="save_text")
+    parser.add_argument(
+        "-decrypted_text",
+        type=str,
+        help="Это обязательный позиционный аргумент, который указывает куда будет сохранен расшифрованный текст",
+        dest="save_d_text")
     args = parser.parse_args()
-
     key_generator(args.keys, args.keys, args.keys)
     encrypt_text_file(args.text, args.keys + '\\private.pem',
                       args.keys + '\\encrypted_symmetrical.txt', args.save_text)
+    decrypt_text_file(args.save_text, args.keys + '\\private.pem',
+                      args.keys + '\\encrypted_symmetrical.txt', args.save_d_text)
