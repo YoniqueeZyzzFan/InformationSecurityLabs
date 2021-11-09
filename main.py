@@ -26,32 +26,34 @@ def input_length() -> int:
 
 def key_generator(encrypted_symmetrical_key_path: str, public_key_path: str, private_key_path: str):
     symmetrical_key = algorithms.Blowfish(os.urandom(input_length()))  # Симметричный ключ
-    rsa_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    private_key = rsa_key  # Ассиметричный приватный ключ
-    public_key = rsa_key.public_key()  # Ассиметричный публичный ключ
-    # Сериализация ключей
-    # сериализация открытого ключа в файл
-    with open(public_key_path + '\\public.pem', 'wb') as public:
-        public.write(public_key.public_bytes(encoding=serialization.Encoding.PEM,
-                                             format=serialization.PublicFormat.SubjectPublicKeyInfo))
+    with tqdm(100, desc='Key generation: ') as progressbar:
+        rsa_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        private_key = rsa_key  # Ассиметричный приватный ключ
+        public_key = rsa_key.public_key()  # Ассиметричный публичный ключ
+        # Сериализация ключей
+        # сериализация открытого ключа в файл
+        with open(public_key_path + '\\public.pem', 'wb') as public:
+            public.write(public_key.public_bytes(encoding=serialization.Encoding.PEM,
+                                                 format=serialization.PublicFormat.SubjectPublicKeyInfo))
 
-    # сериализация закрытого ключа в файл
-    with open(private_key_path + '\\private.pem', 'wb') as private:
-        private.write(private_key.private_bytes(encoding=serialization.Encoding.PEM,
-                                                format=serialization.PrivateFormat.TraditionalOpenSSL,
-                                                encryption_algorithm=serialization.NoEncryption()))
-    # шифрование симметричного ключа при помощи RSA-OAEP
-    encrypt_symmetrical_key = public_key.encrypt(
-        symmetrical_key.key,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
+        # сериализация закрытого ключа в файл
+        with open(private_key_path + '\\private.pem', 'wb') as private:
+            private.write(private_key.private_bytes(encoding=serialization.Encoding.PEM,
+                                                    format=serialization.PrivateFormat.TraditionalOpenSSL,
+                                                    encryption_algorithm=serialization.NoEncryption()))
+        # шифрование симметричного ключа при помощи RSA-OAEP
+        encrypt_symmetrical_key = public_key.encrypt(
+            symmetrical_key.key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
         )
-    )
-    # сериализация шифрованного симметричного ключа в файл
-    with open(encrypted_symmetrical_key_path + '\\encrypted_symmetrical.txt', 'wb') as file:
-        file.write(encrypt_symmetrical_key)
+        # сериализация шифрованного симметричного ключа в файл
+        with open(encrypted_symmetrical_key_path + '\\encrypted_symmetrical.txt', 'wb') as file:
+            file.write(encrypt_symmetrical_key)
+        progressbar.update(100)
 
 
 def encrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmetrical_key_path: str,
@@ -134,7 +136,11 @@ if __name__ == '__main__':
         dest="save_d_text")
     args = parser.parse_args()
     key_generator(args.keys, args.keys, args.keys)
-    encrypt_text_file(args.text, args.keys + '\\private.pem',
-                      args.keys + '\\encrypted_symmetrical.txt', args.save_text)
+with tqdm(100, desc='Encrypting your file: ') as progressbar:
+    encrypt_text_file(args.text, args.keys + '\\private.pem', args.keys + '\\encrypted_symmetrical.txt',
+                      args.save_text)
+    progressbar.update(100)
+with tqdm(100, desc='Decrypting your file: ') as progressbar:
     decrypt_text_file(args.save_text, args.keys + '\\private.pem',
                       args.keys + '\\encrypted_symmetrical.txt', args.save_d_text)
+    progressbar.update(100)
