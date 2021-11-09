@@ -99,7 +99,7 @@ def decrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmet
             label=None
         )
     )
-    with open(path_to_text, 'rb') as file:
+    with open(path_to_text, 'r') as file:
         data = yaml.safe_load(file)
     text_to_decrypt = data["encrypted"]
     urandom = data["urandom"]
@@ -109,7 +109,7 @@ def decrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmet
     unpadder = padding2.ANSIX923(8).unpadder()
     unpadded_decrypt_text = unpadder.update(decrypt_text)
     with open(path_to_save, 'w') as file:
-        file.write(str(unpadded_decrypt_text))
+        file.write(str(unpadded_decrypt_text)[2:-1])
 
 
 if __name__ == '__main__':
