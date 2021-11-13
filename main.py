@@ -70,11 +70,11 @@ def key_generator(encrypted_symmetrical_key_path: str, public_key_path: str, pri
 def encrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmetrical_key_path: str,
                       path_to_save: str) -> None:
     """
-    Это функция дешифровки информации, которая принимает 4 параметра
-    :param path_to_text: путь к зашифрованному тексту
+    Это функция шифрования информации, которая принимает 4 параметра
+    :param path_to_text: путь к незашифрованному файлу
     :param private_key_path: путь к приватному ключу ассиметричного алгоритма
     :param encrypted_symmetrical_key_path: путь к зашифрованному ключу симметричного алгоритма
-    :param path_to_save: путь для сохранения расшифрованного файла
+    :param path_to_save: путь для сохранения зашифрованного файла
     :return: None
     """
     with open(encrypted_symmetrical_key_path, 'rb') as file:
@@ -105,6 +105,14 @@ def encrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmet
 
 
 def decrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmetrical_key_path: str, path_to_save: str) -> None:
+    """
+        Это функция дешифровки информации, которая принимает 4 параметра
+        :param path_to_text: путь к зашифрованному тексту
+        :param private_key_path: путь к приватному ключу ассиметричного алгоритма
+        :param encrypted_symmetrical_key_path: путь к зашифрованному ключу симметричного алгоритма
+        :param path_to_save: путь для сохранения расшифрованного файла
+        :return: None
+        """
     # Расшифровка ключа симм алгоритма
     with open(encrypted_symmetrical_key_path, 'rb') as file:
         encrypted_symmetrical_key = file.read()
