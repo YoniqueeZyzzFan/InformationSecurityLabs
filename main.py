@@ -25,7 +25,7 @@ def input_length() -> int:
         print('Input key length: ')
         length = input()
     print('Valid key length')
-    return int(length)  
+    return int(length)
 
 
 def key_generator(encrypted_symmetrical_key_path: str, public_key_path: str, private_key_path: str) -> None:
@@ -104,7 +104,8 @@ def encrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmet
         yaml.dump(diction, file)
 
 
-def decrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmetrical_key_path: str, path_to_save: str) -> None:
+def decrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmetrical_key_path: str,
+                      path_to_save: str) -> None:
     """
         Это функция дешифровки информации, которая принимает 4 параметра
         :param path_to_text: путь к зашифрованному тексту
@@ -141,15 +142,21 @@ def decrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmet
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="main")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-gen', '--generation', help='Запускает режим генерации ключей')
+    group.add_argument('-enc', '--encryption', help='Запускает режим шифрования')
+    group.add_argument('-dec', '--decryption', help='Запускает режим дешифрования')
     parser.add_argument(
         "-input_key_save",
         type=str,
-        help="Это обязательный строковый позиционный аргумент, который указывает, куда будут сохранены данные о ключах (укажите папку в которую сохранить)",
+        help="Это обязательный строковый позиционный аргумент, который указывает, "
+             "куда будут сохранены данные о ключах (укажите папку в которую сохранить)",
         dest="keys")
     parser.add_argument(
         "-input_text",
         type=str,
-        help="Это обязательный позиционный аргумент, который указывает путь к вашему тексту, который надо зашифровать(зашифрованный появится около обычного)",
+        help="Это обязательный позиционный аргумент, который указывает путь к вашему тексту, "
+             "который надо зашифровать(зашифрованный появится около обычного)",
         dest="text")
     parser.add_argument(
         "-encrypted_text",
@@ -162,12 +169,15 @@ if __name__ == '__main__':
         help="Это обязательный позиционный аргумент, который указывает куда будет сохранен расшифрованный текст",
         dest="save_d_text")
     args = parser.parse_args()
-    key_generator(args.keys, args.keys, args.keys)
-with tqdm(100, desc='Encrypting your file: ') as progressbar:
-    encrypt_text_file(args.text, args.keys + '\\private.pem', args.keys + '\\encrypted_symmetrical.txt',
-                      args.save_text)
-    progressbar.update(100)
-with tqdm(100, desc='Decrypting your file: ') as progressbar:
-    decrypt_text_file(args.save_text, args.keys + '\\private.pem',
-                      args.keys + '\\encrypted_symmetrical.txt', args.save_d_text)
-    progressbar.update(100)
+    if args.generation is not None:
+        key_generator(args.keys, args.keys, args.keys)
+    if args.encryption is not None:
+        with tqdm(100, desc='Encrypting your file: ') as progressbar:
+            encrypt_text_file(args.text, args.keys + '\\private.pem', args.keys + '\\encrypted_symmetrical.txt',
+                              args.save_text)
+            progressbar.update(100)
+    if args.decryption is not None:
+        with tqdm(100, desc='Decrypting your file: ') as progressbar:
+            decrypt_text_file(args.save_text, args.keys + '\\private.pem',
+                              args.keys + '\\encrypted_symmetrical.txt', args.save_d_text)
+        progressbar.update(100)
