@@ -14,6 +14,10 @@ from tqdm import tqdm
 # Ассиметричный RSA
 
 def input_length() -> int:
+    """
+    Эта функция нужна для того, чтобы пользователь ввел число лежащее в пределах [32;448]
+    :return: возвращает int значение
+    """
     print('Input key length: ')
     length = input()
     while int(length) % 8 != 0 or int(length) < 32 or int(length) > 448:
@@ -21,10 +25,17 @@ def input_length() -> int:
         print('Input key length: ')
         length = input()
     print('Valid key length')
-    return int(length)
+    return int(length)  
 
 
-def key_generator(encrypted_symmetrical_key_path: str, public_key_path: str, private_key_path: str):
+def key_generator(encrypted_symmetrical_key_path: str, public_key_path: str, private_key_path: str) -> None:
+    """
+    Функция, которая принимает 3 параметра и создает ключи для шифрования.
+    :param encrypted_symmetrical_key_path: путь сохранения зашифрованного симметричного ключа
+    :param public_key_path: путь сохранения публичного ключа ассиметричного алгоритма
+    :param private_key_path: путь сохранения приватного ключа ассиметричного алгоритма
+    :return: None
+    """
     symmetrical_key = algorithms.Blowfish(os.urandom(input_length()))  # Симметричный ключ
     with tqdm(100, desc='Key generation: ') as progressbar:
         rsa_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -57,7 +68,15 @@ def key_generator(encrypted_symmetrical_key_path: str, public_key_path: str, pri
 
 
 def encrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmetrical_key_path: str,
-                      path_to_save: str):
+                      path_to_save: str) -> None:
+    """
+    Это функция дешифровки информации, которая принимает 4 параметра
+    :param path_to_text: путь к зашифрованному тексту
+    :param private_key_path: путь к приватному ключу ассиметричного алгоритма
+    :param encrypted_symmetrical_key_path: путь к зашифрованному ключу симметричного алгоритма
+    :param path_to_save: путь для сохранения расшифрованного файла
+    :return: None
+    """
     with open(encrypted_symmetrical_key_path, 'rb') as file:
         encrypted_symmetrical_key = file.read()
     with open(private_key_path, 'rb') as file:
@@ -85,7 +104,7 @@ def encrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmet
         yaml.dump(diction, file)
 
 
-def decrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmetrical_key_path: str, path_to_save: str):
+def decrypt_text_file(path_to_text: str, private_key_path: str, encrypted_symmetrical_key_path: str, path_to_save: str) -> None:
     # Расшифровка ключа симм алгоритма
     with open(encrypted_symmetrical_key_path, 'rb') as file:
         encrypted_symmetrical_key = file.read()
